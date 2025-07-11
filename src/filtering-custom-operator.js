@@ -3,7 +3,7 @@ import { interval, Observable, filter } from "rxjs";
 const stream$ = interval(1000)
 
 // rxjs Operator
-const filterStreamValue = (filterFn) => {
+const filterCustom = (filterFn) => {
     return (source$) => new Observable((subscriber) => {
         const subscription = source$.subscribe({
             next: (val) => {
