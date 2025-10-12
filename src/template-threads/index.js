@@ -1,7 +1,8 @@
-import { from, interval, of, timer } from "rxjs"
+import { from, interval, of, time, zip } from "rxjs"
 import { ajax } from "rxjs/ajax"
 
 const myInterval$ = interval(1000)
+
 
 myInterval$.subscribe({
     next: (data => {
