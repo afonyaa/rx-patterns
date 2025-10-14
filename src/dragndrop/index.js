@@ -1,83 +1,60 @@
-const { Observable, zip, map, exhaustMap, fromEvent, tap, of, takeUntil } = rxjs;
+const { Observable, zip, map, exhaustMap, tap, of, takeUntil, fromEvent, timer } = rxjs;
+
+// import { fromEvent, Observable } from "rxjs"
 
 const box = document.querySelector('.box')
+const timer$ = timer(2000);
 
-
-function dragStartElement$(element) {
-    return new Observable(sub => {
-        const mouseDownHandler = (evt) => {
-            sub.next({
-                offsetX: evt.offsetX,
-                offsetY: evt.offsetY,
-            })
-        }
-        element.addEventListener('mousedown', mouseDownHandler)
-
-        return () => {
-            element.removeEventListener('mousedown', mouseDownHandler)
-        }
-    })
+const dragStart = (el) => {
+    return fromEvent(el, 'mousedown')
+        .pipe(map(ev => (
+            { clientX: ev.clientX, clientY: ev.clientY }
+        )))
 }
 
-function dragProcessElement$(offsets) {
-    return new Observable(sub => {
-        const mouseUp$ = fromEvent(document, 'mouseup')
-        const mouseMoveHandler = (evt) => {
-            sub.next( // переписать на fromEvent
-                {
-                    x: evt.clientX - offsets.offsetX,
-                    y: evt.clientY - offsets.offsetY
-                }
+const dragProcess = () => {
+    return fromEvent(document, 'mousemove')
+}
+
+const dragEnd = () => {
+    return fromEvent(document, 'mouseup')
+}
+
+const $dragElement = (el) => {
+    return dragStart(el).pipe(
+        exhaustMap((dragStartEvt) => {
+            const startX = el.offsetLeft;
+            const startY = el.offsetTop;
+            const startMouseX = dragStartEvt.clientX;
+            const startMouseY = dragStartEvt.clientY;
+
+            return dragProcess().pipe(
+                map((moveEvt) => {
+                    const deltaX = moveEvt.clientX - startMouseX;
+                    const deltaY = moveEvt.clientY - startMouseY;
+                    return {
+                        x: startX + deltaX,
+                        y: startY + deltaY
+                    };
+                }),
+                takeUntil(dragEnd()) // работает сколько угодно раз
             )
-        }
-        const mouseUpHandler = () => {
-            sub.complete()
-        }
-        document.addEventListener('mousemove', mouseMoveHandler)
-        document.addEventListener('mouseup', mouseUpHandler)
-
-        return () => {
-            document.removeEventListener('mousemove', mouseMoveHandler)
-        }
-    })
+        }),
+    )
 }
 
-function dragElement$(element) {
-    return new Observable(sub => {
-        const mouseUp$ = fromEvent(document, 'mouseup')
-        const mouseDown$ = fromEvent(element, 'mousedown')
-        const mouseMove$ = fromEvent(document, 'mousemove')
+// const $dragElement = (el) => {
+//     return dragStart(el).pipe(
+//         exhaustMap((dragStartEvt) => {
+//             return dragProcess()
+//         }),
+//         takeUntil(dragEnd()) // работает один раз
+//     )
+// }
 
-        mouseDown$.pipe(
-            tap(evt => evt.preventDefault()),
-            map(evt => ({
-                offsetX: evt.offsetX,
-                offsetY: evt.offsetY,
-            })),
-            exhaustMap((offsets) => mouseMove$
-                .pipe(
-                    tap(moveEvt => moveEvt.preventDefault()),
-                    map(moveEvt => ({
-                        x: moveEvt.clientX - offsets.offsetX,
-                        y: moveEvt.clientY - offsets.offsetY
-                    })),
-                )),
-            takeUntil(mouseUp$)
-        ).subscribe(({
-            x,
-            y
-        }) => {
-            sub.next({
-                x,
-                y
-            })
-        })
-
-
-    })
-}
-
-dragElement$(box).subscribe(res => {
-    box.style.left = `${res.x}px`
-    box.style.top = `${res.y}px`
+$dragElement(box).subscribe({
+    next(pos) {
+        box.style.left = `${pos.x}px`
+        box.style.top = `${pos.y}px`
+    }
 })
