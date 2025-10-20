@@ -8,7 +8,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "serve:pseudo-hot": "npx http-server ./src/pseudo-hot-thread -c1",
     "serve:swipe": "npx http-server ./src/swiping -c1",
-    "serve:dnd": "npx http-server ./src/dragndrop -c1"
+    "serve:dnd": "npx http-server ./src/dragndrop -c1",
+    "serve:live-search": "npx http-server ./src/live-search -c1"
   },
   "keywords": [],
   "author": "",
